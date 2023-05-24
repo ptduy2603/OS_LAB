@@ -15,13 +15,14 @@ typedef struct {
 
 int randomInputProcess(int numberOfProcess , PCB P[]);
 int printProcess(int numberOfProcess, PCB P[]);
-int sortProcess(int numberOfProcess, PCB P[], int criteria);
+int sortProcess(PCB P[], int start, int end, int criteria);
+
 
 int main() {
     // Phạm Thanh Duy_21522008, Lê Quốc Anh_21520565 - Mô phỏng giải thuật Shorted Job First
     // Input number of process
     int iNumberOfProcess = 0;
-    printf("Nhap vao so tien trinh: ");
+    printf("Enter the number of processes: ");
     scanf("%d" , &iNumberOfProcess);
 
     PCB Input[iNumberOfProcess];
@@ -31,6 +32,9 @@ int main() {
     int iReady = 0, iTerminated = 0;
 
     randomInputProcess(iNumberOfProcess , Input);
+    printProcess(iNumberOfProcess, Input);
+    sortProcess(Input, 0, iNumberOfProcess - 1, SORT_BY_ARRIVAL);
+    printf("\t\tProcess Array after sorted\n");
     printProcess(iNumberOfProcess , Input);
     return 0;
 }
@@ -53,6 +57,20 @@ int printProcess(int numberOfProcess, PCB P[]) {
     }    
 }
 
-int sortProcess (int numberOfProcess, PCB P[], int criteria) {
-
+int sortProcess (PCB P[], int start, int end,  int criteria) {
+    // sort mảng tiến trình tăng dần theo tiêu chuẩn được truyền vào với thuật toán interchangeSort
+    if(criteria == SORT_BY_ARRIVAL) {
+        for(int i = start; i < end ; i++)
+        {
+            for(int j = i + 1; j <= end ; j++)
+            {
+                if(P[i].iArrival > P[j].iArrival)
+                {
+                    PCB tempProcess = P[j];
+                    P[j] = P[i];
+                    P[i] = tempProcess;
+                }
+            }
+        }
+    }
 }
