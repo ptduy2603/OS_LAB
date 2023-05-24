@@ -1,2 +1,2 @@
 # OS_LAB
-Code bài tập thuật toán Lab4 OS
+Code mô phỏng giải thuật định thời SJF và RR với C
