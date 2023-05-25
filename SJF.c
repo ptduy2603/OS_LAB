@@ -7,6 +7,7 @@
 #define SORT_BY_PID 1
 #define SORT_BY_BURST 2
 #define SORT_BY_START 3
+#define PRINT_DETAIL 1
 
 typedef struct {
     int iPID;
@@ -16,16 +17,17 @@ typedef struct {
 
 bool checkDuplicateArrivalTime(int array[], int n , int randomNumber);
 void randomInputProcess(int numberOfProcess , PCB P[]);
-void printProcess(int numberOfProcess, PCB P[]);
+void printProcess(int numberOfProcess, PCB P[] , int option);
 void sortProcess(PCB P[], int start, int end, int criteria);
 void drawGanttChart(int numberOfProcess, PCB P[]);
 void pushProcess(int *numberOfProcess, PCB P[], PCB Process);
 void removeProcess(int *numberOfProcess, int index , PCB P[]);
 float calculateAWT(int numberOfProcess , PCB P[]);
 float calculateATaT(int numberOfProcess , PCB P[]);
+int current = 0;
 
 int main() {
-    // Phạm Thanh Duy_21522008, Lê Quốc Anh_21520565 - Mô phỏng giải thuật Shorted Job First
+    // Phạm Thanh Duy_21522008, Lê Quốc Anh_21520565 - Mô phỏng giải thuật Shortest Job First
     // Input number of process
     int iNumberOfProcess = 0;
     printf("Enter the number of processes: ");
@@ -39,22 +41,18 @@ int main() {
 
     randomInputProcess(iNumberOfProcess , Input);
     sortProcess(Input , 0, iNumberOfProcess - 1 , SORT_BY_ARRIVAL);
-    printProcess(iRemain , Input);
+    printProcess(iRemain , Input, 0);
 
     pushProcess(&iReady , ReadyQueue , Input[0]);
     removeProcess(&iRemain , 0 ,Input);
 
-    // xử lí theo FCFS
     ReadyQueue[0].iStart = ReadyQueue[0].iArrival;
-    ReadyQueue[0].iFinish = ReadyQueue[0].iStart +
-    ReadyQueue[0].iBurst;
-    ReadyQueue[0].iResponse = ReadyQueue[0].iStart -
-    ReadyQueue[0].iArrival;
+    ReadyQueue[0].iFinish = ReadyQueue[0].iStart + ReadyQueue[0].iBurst;
+    ReadyQueue[0].iResponse = ReadyQueue[0].iStart - ReadyQueue[0].iArrival;
     ReadyQueue[0].iWaiting = ReadyQueue[0].iResponse;
-    ReadyQueue[0].iTaT = ReadyQueue[0].iFinish -
-    ReadyQueue[0].iArrival;
-    // printf("\nReady Queue: ");
-    // printProcess(1, ReadyQueue);
+    ReadyQueue[0].iTaT = ReadyQueue[0].iFinish - ReadyQueue[0].iArrival;
+    current = ReadyQueue[0].iFinish;
+
     while (iTerminated < iNumberOfProcess)
     {
         while (iRemain > 0)
@@ -62,36 +60,43 @@ int main() {
             if (Input[0].iArrival <= ReadyQueue[0].iFinish)
             {
                 pushProcess(&iReady, ReadyQueue, Input[0]);
+                // sort lại ready queue theo độ ưu tiên là burst time
+                sortProcess(ReadyQueue, 1 , iReady - 1 , SORT_BY_BURST);
                 removeProcess(&iRemain, 0, Input);
-                continue;
             }
-            else break;
+            else 
+            {
+                if(iReady == 1) // trường hợp tiến trình chưa đến 
+                {
+                    current = Input[0].iArrival;
+                    pushProcess(&iReady, ReadyQueue, Input[0]);
+                    removeProcess(&iRemain, 0, Input);
+                }
+                break;
+            }
         }
-
+ 
         if (iReady > 0)
         {
-            pushProcess(&iTerminated, TerminatedArray,
-            ReadyQueue[0]);
+            pushProcess(&iTerminated, TerminatedArray, ReadyQueue[0]);
             removeProcess(&iReady, 0, ReadyQueue);
 
-            ReadyQueue[0].iStart = TerminatedArray[iTerminated
-            - 1].iFinish;
-            ReadyQueue[0].iFinish = ReadyQueue[0].iStart +
-            ReadyQueue[0].iBurst;
-            ReadyQueue[0].iResponse = ReadyQueue[0].iStart -
-            ReadyQueue[0].iArrival;
+            ReadyQueue[0].iStart = current;
+            ReadyQueue[0].iFinish = ReadyQueue[0].iStart + ReadyQueue[0].iBurst;
+            ReadyQueue[0].iResponse = ReadyQueue[0].iStart - ReadyQueue[0].iArrival;
             ReadyQueue[0].iWaiting = ReadyQueue[0].iResponse;
-            ReadyQueue[0].iTaT = ReadyQueue[0].iFinish -
-            ReadyQueue[0].iArrival;
+            ReadyQueue[0].iTaT = ReadyQueue[0].iFinish - ReadyQueue[0].iArrival;
         }
+        current = ReadyQueue[0].iFinish;
     }
-
-    // sortProcess(TerminatedArray, 0 ,iTerminated - 1, SORT_BY_PID);
-
+ 
     drawGanttChart(iTerminated , TerminatedArray);
-    printf("Thoi gian cho trung binh: %.2f\n", calculateAWT(iTerminated, TerminatedArray));
-    printf("Thoi gian hoan thanh trung binh: %.2f", calculateATaT(iTerminated, TerminatedArray));
-     return 0;
+    sortProcess(TerminatedArray, 0 , iTerminated - 1, SORT_BY_PID);
+    printProcess(iTerminated , TerminatedArray , PRINT_DETAIL);
+    printf("AWT: %.2f\n", calculateAWT(iTerminated, TerminatedArray));
+    printf("ATaT: %.2f", calculateATaT(iTerminated, TerminatedArray));
+     
+    return 0;
 }
 
 bool checkDuplicateArrivalTime(int array[], int n , int randomNumber){
@@ -102,11 +107,11 @@ bool checkDuplicateArrivalTime(int array[], int n , int randomNumber){
 }
 
 void randomInputProcess(int numberOfProcess , PCB P[]) {
+    printf(".....Random Processes.....\n");
     srand(time(NULL));
     int ArrivalTime[numberOfProcess];
     int n = 0;
-    bool flag = false;
-    
+      
     for(int i = 0; i < numberOfProcess ; i++)
     {
         P[i].iPID = i + 1;
@@ -117,25 +122,26 @@ void randomInputProcess(int numberOfProcess , PCB P[]) {
             arrivalRandom = rand()%20;
         }
 
-        if(arrivalRandom == 0)
-            flag = true;
-
         ArrivalTime[n++] = arrivalRandom;
         P[i].iArrival = arrivalRandom;
         P[i].iBurst = rand()%(12 - 2 + 1) + 2;
     }
 
-    if(!flag)
-    {
-        P[rand()%numberOfProcess].iArrival = 0;
-    }
 }
 
-void printProcess(int numberOfProcess, PCB P[]) {
-    printf("Process\tArrivalTime\tBurstTime\n");
-    for (int i = 0; i < numberOfProcess; i++)
+void printProcess(int numberOfProcess, PCB P[], int option) {
+    if(option == PRINT_DETAIL)
     {
-        printf("P%d\t\t%d\t\t%d\n", P[i].iPID , P[i].iArrival , P[i].iBurst);
+        printf("Process\t  Start\t  Finish  Waiting  Response  TaT\n");
+        for(int i = 0; i < numberOfProcess; i++)
+             printf("P%d\t   %d\t   %d\t   %d\t     %d\t     %d\n", P[i].iPID , P[i].iStart , P[i].iFinish, P[i].iWaiting , P[i].iResponse , P[i].iTaT);
+    }
+    else {
+        printf("Process\t   ArrivalTime\t   BurstTime\n");
+        for (int i = 0; i < numberOfProcess; i++)
+        {
+            printf("P%d\t\t%d\t\t%d\n", P[i].iPID , P[i].iArrival , P[i].iBurst);
+        }
     }
     printf("\n");    
 }
@@ -191,6 +197,7 @@ void sortProcess (PCB P[], int start, int end,  int criteria) {
 
 void pushProcess(int *n, PCB P[], PCB Process) {
     P[(*n)++] = Process;
+  
 }
 
 void removeProcess(int *numberOfProcess, int index , PCB P[]) {
@@ -221,9 +228,28 @@ float calculateATaT(int numberOfProcess , PCB P[]) {
 
 void drawGanttChart(int numberOfProcess, PCB P[]) {
     // vẽ biển đồ chart
-    printf("===GanttChart===\n");
+    printf(".....GanttChart.....\n");
+    int currentPoint = P[0].iStart;
+    int runTime = 0;
+    
     for(int i = 0; i < numberOfProcess ; i++)
     {
-        printf("P%d:  %d  %d\n" , P[i].iPID , P[i].iStart, P[i].iFinish);
+        if(P[i].iStart != currentPoint || i == 0)
+            printf("  %d" , P[i].iStart);
+      
+        while(runTime <= P[i].iBurst)
+        {
+            if(runTime == P[i].iBurst/2)
+                printf("P%d", P[i].iPID);
+            else
+                printf("-");    
+            runTime++;
+        }
+
+        printf("%d", P[i].iFinish);
+        runTime = 0;
+        currentPoint = P[i].iFinish;    
     }
+
+    printf("\n\n");   
 }
