@@ -184,7 +184,7 @@ void sortProcess (PCB P[], int start, int end,  int criteria) {
         {
             for(int j = i + 1; j <= end ; j++)
             {
-                if(P[i].iBurst >= P[j].iBurst)
+                if(P[i].iBurst > P[j].iBurst || (P[i].iBurst == P[j].iBurst && P[i].iArrival > P[j].iArrival))
                 {
                     PCB tempProcess = P[j];
                     P[j] = P[i];
