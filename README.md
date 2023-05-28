@@ -1,2 +1,3 @@
-# OS_LAB
-Code mô phỏng giải thuật định thời SJF và RR với C
+# OS_LAB4
+Built 2 algorithms for scheduling processes : Shortest Job First (SJF) and Round Robin (RR) using C
+Everyone can clone this repo and demo code
