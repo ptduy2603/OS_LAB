@@ -20,7 +20,7 @@ void random_Input_Process(int numberOfProcess , PCB P[]);
 int random_QuantumTime();
 void print_Process(int numberOfProcess, PCB p[], int option);
 void sortProcess(PCB P[], int start, int end, int criteria);
-// void drawGanttChart(int numberOfProcess, PCB P[]);
+void drawGanttChart(PCB Process, int current);
 void pushProcess(int *numberoOfProcess, PCB P[], PCB Process);
 void removeProcess(int *numberOfProcess, int index , PCB P[]);
 float calculateAWT(int numberOfProcess , PCB P[]);
@@ -28,7 +28,7 @@ float calculateATaT(int numberOfProcess , PCB P[]);
 
 
 int current = 0;
-bool open_door = 1;
+bool sort_rq = 1;
 
 
 int main()
@@ -59,80 +59,146 @@ int main()
     print_Process(iRemain , Input, 0);
 
     pushProcess(&iReady , ReadyQueue , Input[0]);
-    removeProcess(&iReady , 0 ,Input);
+    removeProcess(&iRemain , 0 ,Input);
     int runtime = 0;
-    printf(".....GanttChart.....\n\n");
+    printf(".....GanttChart.....\n");
 
-    if(ReadyQueue[0].iBurst_have >= quantumTime)
+    if(ReadyQueue[0].iBurst_have > quantumTime)
     {
         ReadyQueue[0].iBurst_have -= quantumTime;
         ReadyQueue[0].iStart = ReadyQueue[0].iArrival;
-        ReadyQueue[0].iFinish = ReadyQueue[0].iStart + quantumTime;
-        current = ReadyQueue[0].iFinish;
+        ReadyQueue[0].iResponse = ReadyQueue[0].iStart - ReadyQueue[0].iArrival;
+        current = ReadyQueue[0].iStart + quantumTime;
+
+        if(ReadyQueue[0].iStart != current)
+            printf("  %d" , ReadyQueue[0].iStart);
+
+        while(runtime <= quantumTime)
+        {
+            if(runtime == quantumTime/2)
+                printf("-P%d-", ReadyQueue[0].iPID);
+            else
+                printf("-");
+            runtime++;
+        }
+
+        printf("%d", current);
+        runtime = 0;
     }
     else 
     {
         ReadyQueue[0].iStart = ReadyQueue[0].iArrival;
         ReadyQueue[0].iFinish = ReadyQueue[0].iStart + ReadyQueue[0].iBurst_have;
         ReadyQueue[0].iResponse = ReadyQueue[0].iArrival;
-        ReadyQueue[0].iWaiting = ReadyQueue[0].iFinish;
-        current = ReadyQueue[0].iFinish;
+        current= ReadyQueue[0].iFinish;
         ReadyQueue[0].iBurst_have = 0;
-        open_door = 0;   
+        sort_rq = 0;  
+ 
+        if(ReadyQueue[0].iStart != current)
+            printf("  %d" , ReadyQueue[0].iStart);
+
+        while(runtime <= ReadyQueue[0].iBurst_have)
+        {
+            if(runtime == ReadyQueue[0].iBurst_have/2)
+                printf("-P%d-", ReadyQueue[0].iPID);
+            else
+                printf("-");
+            runtime++;
+        }
+
+        printf("%d", current);
+        runtime = 0;
     }
 
-    while (iTerminated < iNumberOfProcess)
+    while(iTerminated < iNumberOfProcess)
     {
-        if(iRemain > 0)
+        while(iRemain > 0)
         {
-            if(Input[0].iArrival <= ReadyQueue[0].iFinish)
-            {
-                pushProcess(&iReady , ReadyQueue , Input[0]);
-                removeProcess(&iRemain, 0, Input);
-            }
-            else if(iReady > 0)
-            {
-                if(ReadyQueue[0].iBurst_have > 0)
+                if(Input[0].iArrival <= current)
                 {
-                    if(open_door)
+                    pushProcess(&iReady , ReadyQueue , Input[0]);
+                    removeProcess(&iRemain , 0 ,Input);
+                }
+                else break;
+        }
+
+        if(iReady > 0)
+        {
+            if(ReadyQueue[0].iBurst_have > 0)
+            {
+                if(sort_rq == 1 && iReady > 1)
+                {
+                    sortProcess(ReadyQueue, 0, iReady - 1, SORT_BY_TURN);
+                }
+                
+                if(ReadyQueue[0].iBurst_have == ReadyQueue[0].iBurst)
+                {
+                    ReadyQueue[0].iStart = current;
+                    ReadyQueue[0].iResponse = ReadyQueue[0].iStart - ReadyQueue[0].iArrival;
+                }
+                
+                if(ReadyQueue[0].iBurst_have > quantumTime)
+                {
+                    ReadyQueue[0].iBurst_have -= quantumTime;
+                    current += quantumTime;
+                    sort_rq = 1;
+
+                    //draw
+                    while(runtime <= quantumTime)
                     {
-                        sortProcess(ReadyQueue,0, iReady - 1, SORT_BY_TURN);
+                        if(runtime == quantumTime/2)
+                            printf("-P%d-", ReadyQueue[0].iPID);
+                        else
+                            printf("-");
+                        runtime++;
                     }
-                    if(ReadyQueue[0].iBurst_have == ReadyQueue[0].iBurst)
-                    {
-                        ReadyQueue[0].iStart = current;
-                        ReadyQueue[0].iResponse = ReadyQueue[0].iStart - ReadyQueue[0].iArrival;
-                    }
-                    {
-                    if(ReadyQueue[0].iBurst_have > quantumTime)
-                    {
-                        ReadyQueue[0].iBurst_have -= quantumTime;
-                        ReadyQueue[0].iStart = current;
-                        ReadyQueue[0].iFinish = ReadyQueue[0].iStart + quantumTime;
-                        current = ReadyQueue[0].iFinish;
-                        open_door = 1;
-                    }
-                    else
-                    {
-                        ReadyQueue[0].iStart = current;
-                        ReadyQueue[0].iFinish = ReadyQueue[0].iStart + ReadyQueue[0].iBurst_have;
-                        current = ReadyQueue[0].iFinish;
-                        ReadyQueue[0].iBurst_have = 0;
-                        open_door = 0;
-                    }
-                    }
-                    
+
+                    printf("%d", current);
+                    runtime = 0;
                 }
                 else
                 {
-                    ReadyQueue[0].iTaT = ReadyQueue[0].iFinish - ReadyQueue[0].iArrival;
-                    ReadyQueue[0].iWaiting = ReadyQueue[0].iTaT - ReadyQueue[0].iBurst;
-                    pushProcess(&iTerminated, TerminatedArray, ReadyQueue[0]);
-                    removeProcess(&iReady, 0, ReadyQueue);
+                    ReadyQueue[0].iFinish = current + ReadyQueue[0].iBurst_have;
+                    current = ReadyQueue[0].iFinish;
+                    ReadyQueue[0].iBurst_have = 0;
+                    sort_rq = 0;
+                    //draw
+                    while(runtime <= ReadyQueue[0].iBurst_have)
+                    {
+                        if(runtime == ReadyQueue[0].iBurst_have/2)
+                            printf("-P%d-", ReadyQueue[0].iPID);
+                        else
+                            printf("-");
+                        runtime++;
+                    }
+
+                    printf("%d", current);
+                    runtime = 0;
+                    
                 }
+                
+            }
+            else
+            {
+                ReadyQueue[0].iTaT = ReadyQueue[0].iFinish - ReadyQueue[0].iArrival;
+                ReadyQueue[0].iWaiting = ReadyQueue[0].iTaT - ReadyQueue[0].iBurst;
+                pushProcess(&iTerminated, TerminatedArray, ReadyQueue[0]);
+                removeProcess(&iReady, 0, ReadyQueue);
+                continue;
             }
         }
+        else
+        {
+            current = Input[0].iArrival;
+            pushProcess(&iReady , ReadyQueue , Input[0]);
+            removeProcess(&iRemain , 0 ,Input);
+        }
+
+        
     }
+    
+
+    
     sortProcess(TerminatedArray, 0 , iTerminated - 1, SORT_BY_PID);
     print_Process(iTerminated, TerminatedArray, PRINT_DETAIL);
     return 0;
@@ -180,6 +246,7 @@ int random_QuantumTime(int min, int max)
 }
 
 void print_Process(int numberOfProcess, PCB P[], int option) {
+    printf("\n");
     if(option == PRINT_DETAIL)
     {
         printf("Process\t  Start\t  Finish  Waiting  Response  TaT\n");
@@ -230,45 +297,37 @@ void sortProcess (PCB P[], int start, int end,  int criteria) {
 
     if(criteria == SORT_BY_TURN)
     {
+        PCB tempProcess = P[start];
         for(int i = start; i < end ; i++)
         {
-            for(int j = i + 1; j <= end ; j++)
-            {
-                PCB tempProcess = P[j];
-                P[j] = P[i];
-                P[i] = tempProcess;
-            }
+            P[i] = P[i + 1];
         }
+        P[end] = tempProcess;
     }
 }
 
-// void drawGanttChart(PCB Process) {
-//     // vẽ biển đồ chart
-//     printf(".....GanttChart.....\n");
-//     int currentPoint = P[0].iStart;
-//     int runTime = 0;
-    
-//     for(int i = 0; i < numberOfProcess ; i++)
-//     {
-//         if(P[i].iStart != currentPoint || i == 0)
-//             printf("  %d" , P[i].iStart);
-      
-//         while(runTime <= P[i].iBurst)
-//         {
-//             if(runTime == P[i].iBurst/2)
-//                 printf("P%d", P[i].iPID);
-//             else
-//                 printf("-");    
-//             runTime++;
-//         }
+void drawGanttChart(PCB Process, int current) {
+    // vẽ biển đồ chart
+    int runtime = 0;
 
-//         printf("%d", P[i].iFinish);
-//         runTime = 0;
-//         currentPoint = P[i].iFinish;    
-//     }
+    if(Process.iStart != 
+            printf("  %d" , Process.iStart);
 
-//     printf("\n\n");   
-// }
+    while(runtime <= Process.iBurst_have)
+    {
+        if(runtime == Process.iBurst_have/2)
+            printf("P%d", Process.iPID);
+        else
+            printf("-");
+        runtime++;
+    }
+
+    printf("%d", Process.iFinish);
+    runtime = 0;
+    currentPoint = Process.iFinish;
+
+    printf("\n\n");   
+}
 
 void pushProcess(int *n, PCB P[], PCB Process) {
     P[(*n)++] = Process;
