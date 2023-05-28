@@ -86,8 +86,8 @@ int main() {
             ReadyQueue[0].iResponse = ReadyQueue[0].iStart - ReadyQueue[0].iArrival;
             ReadyQueue[0].iWaiting = ReadyQueue[0].iResponse;
             ReadyQueue[0].iTaT = ReadyQueue[0].iFinish - ReadyQueue[0].iArrival;
+            current = ReadyQueue[0].iFinish;
         }
-        current = ReadyQueue[0].iFinish;
     }
  
     drawGanttChart(iTerminated , TerminatedArray);
@@ -184,7 +184,7 @@ void sortProcess (PCB P[], int start, int end,  int criteria) {
         {
             for(int j = i + 1; j <= end ; j++)
             {
-                if(P[i].iBurst > P[j].iBurst)
+                if(P[i].iBurst > P[j].iBurst || ((P[i].iBurst == P[j].iBurst) && (P[i].iArrival > P[j].iArrival)))
                 {
                     PCB tempProcess = P[j];
                     P[j] = P[i];
@@ -228,7 +228,7 @@ float calculateATaT(int numberOfProcess , PCB P[]) {
 
 void drawGanttChart(int numberOfProcess, PCB P[]) {
     // vẽ biển đồ chart
-    printf(".....GanttChart.....\n");
+    printf(".....GanttChart SJF.....\n");
     int currentPoint = P[0].iStart;
     int runTime = 0;
     
